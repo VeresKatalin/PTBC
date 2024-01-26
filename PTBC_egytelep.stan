@@ -1,22 +1,22 @@
 ///////////////////////////////////////////////////////////////////////////
-// Bayes-i modellezés a gyakorlatban.
-// Tejelõ tehénállományok állományon belüli PTBC fertõzöttségének becslése  
+// Bayes-i modellezÃ©s a gyakorlatban.
+// TejelÃµ tehÃ©nÃ¡llomÃ¡nyok Ã¡llomÃ¡nyon belÃ¼li PTBC fertÃµzÃ¶ttsÃ©gÃ©nek becslÃ©se  
 //
-// Veres Katalin, Lang Zsolt, Monostori Attila, Ózsvári László 
+// Veres Katalin, Lang Zsolt, Monostori Attila, Ã“zsvÃ¡ri LÃ¡szlÃ³ 
 // 2024                                                       
 ///////////////////////////////////////////////////////////////////////////
 // STAN MODELL
 //
-// Bemenõ adatok:  tehenek életkora, paritás, PTBC teszt eredmény 
-// Kimenõ adatok: .... Bayesi becslése
+// BemenÃµ adatok:  tehenek Ã©letkora, paritÃ¡s, PTBC teszt eredmÃ©ny 
+// KimenÃµ adatok: .... Bayesi becslÃ©se
 ///////////////////////////////////////////////////////////////////////////
-// Használat: 
-// Mentsük a fájlt a PTBC_egytelep fájlal azonos mappába.
-// Ezt a fájl nem szükséges módosítani, sem közvetlenül futattni.
-// A PTBC_egytelep fájl futtatásakor automatikusan beolvasásra kerül.
+// HasznÃ¡lat: 
+// MentsÃ¼k a fÃ¡jlt a PTBC_egytelep fÃ¡jlal azonos mappÃ¡ba.
+// Ezt a fÃ¡jl nem szÃ¼ksÃ©ges mÃ³dosÃ­tani, sem kÃ¶zvetlenÃ¼l futattni.
+// A PTBC_egytelep fÃ¡jl futtatÃ¡sakor automatikusan beolvasÃ¡sra kerÃ¼l.
 //////////////////////////////////////////////////////////////////////////
 
-functions {  //inverze-béta eloszlásfüggvény
+functions {  //inverze-bÃ©ta eloszlÃ¡sfÃ¼ggvÃ©ny
   vector inv_beta (vector y,
                    vector theta,
                    real[] x_r,
@@ -27,28 +27,28 @@ functions {  //inverze-béta eloszlásfüggvény
   }
 }
 data {
-  int<lower=1> nAllRec;          // Az összes tehén korcsoportjainak száma
-  int<lower=0> nAgegr_primi;     // Egyszer ellett tehenek korcsoportjainak száma
-  int<lower=0> nCOW[nAllRec];    // Egyszer ill. többször ellett tehenek száma korcsoportonként 
-  int<lower=0> POS[nAllRec];     // Pozitívat tesztelõ egyszer ill. többször ellett tehenek száma korcsoportonként
+  int<lower=1> nAllRec;          // Az Ã¶sszes tehÃ©n korcsoportjainak szÃ¡ma
+  int<lower=0> nAgegr_primi;     // Egyszer ellett tehenek korcsoportjainak szÃ¡ma
+  int<lower=0> nCOW[nAllRec];    // Egyszer ill. tÃ¶bbszÃ¶r ellett tehenek szÃ¡ma korcsoportonkÃ©nt 
+  int<lower=0> POS[nAllRec];     // PozitÃ­vat tesztelÃµ egyszer ill. tÃ¶bbszÃ¶r ellett tehenek szÃ¡ma korcsoportonkÃ©nt
   real<lower=0> AgeG[nAllRec];   // A tehenek korcsoportjai
 }
-transformed data { //algebra-solverben használt paraméterek
+transformed data { //algebra-solverben hasznÃ¡lt paramÃ©terek
   real x_r[0];
   int x_i[0];
-  real rel_tol    = 10^(-4); //relatív hiba
-  real f_tol      = 1;       //abszolút hiba
-  real max_steps  = 10^4;    //iterációk maximális száma
+  real rel_tol    = 10^(-4); //relatÃ­v hiba
+  real f_tol      = 1;       //abszolÃºt hiba
+  real max_steps  = 10^4;    //iterÃ¡ciÃ³k maximÃ¡lis szÃ¡ma
 }
 parameters {
-  real <lower = 0.00001, upper = 1> mu1;  // Egyszer ellett tehenekhez tartozó átlagos CWHP
-  real <lower = 0.00001, upper = 1> mu2;  // Többször ellett tehenekhez tartozó átlagos CWHP
-  real eta; // Telepszintû random hatás
-  real et1; // Egyszer ellett tehenekhez tartozó additív random hatás
-  real et2; // Többször ellett tehenekhez tartozó additív random hatás
-  real <lower = 0.00001> sigmasq; // Telepszintû random hatás varianciája
-  real <lower = 0.00001> sigm1sq; // additív random hatás varianciája - egyszer ellett tehenek
-  real <lower = 0.00001> sigm2sq; // additív random hatás varianciája - többször ellett tehenek
+  real <lower = 0.00001, upper = 1> mu1;  // Egyszer ellett tehenekhez tartozÃ³ Ã¡tlagos CWHP
+  real <lower = 0.00001, upper = 1> mu2;  // TÃ¶bbszÃ¶r ellett tehenekhez tartozÃ³ Ã¡tlagos CWHP
+  real eta; // TelepszintÃ» random hatÃ¡s
+  real et1; // Egyszer ellett tehenekhez tartozÃ³ additÃ­v random hatÃ¡s
+  real et2; // TÃ¶bbszÃ¶r ellett tehenekhez tartozÃ³ additÃ­v random hatÃ¡s
+  real <lower = 0.00001> sigmasq; // TelepszintÃ» random hatÃ¡s varianciÃ¡ja
+  real <lower = 0.00001> sigm1sq; // additÃ­v random hatÃ¡s varianciÃ¡ja - egyszer ellett tehenek
+  real <lower = 0.00001> sigm2sq; // additÃ­v random hatÃ¡s varianciÃ¡ja - tÃ¶bbszÃ¶r ellett tehenek
   }
 
 transformed parameters {
@@ -56,21 +56,21 @@ transformed parameters {
 
 model {
 
-  vector[3] theta; //inverz-béta eloszlásfüggvény bemenõ paramétereinek vektora
+  vector[3] theta; //inverz-bÃ©ta eloszlÃ¡sfÃ¼ggvÃ©ny bemenÃµ paramÃ©tereinek vektora
   
   real HTP;
   
   real lmu1;
   real lmu2;
   
-  real CWHP1; // Egyszer ellett tehenekhez tartozó CWHP
-  real CWHP2; // Többször ellett tehenekhez tartozó CWHP
+  real CWHP1; // Egyszer ellett tehenekhez tartozÃ³ CWHP
+  real CWHP2; // TÃ¶bbszÃ¶r ellett tehenekhez tartozÃ³ CWHP
 
-  real pi1;    // Egyszer ellett tehenekhez tartozó látszólagos prevalencia
-  real pi2;    // Többször ellett tehenekhez tartozó látszólagos prevalencia
-  real Sp;     // Specificitás (fajlagosság)
-  real Se;     // Korfüggõ szenzitivitás (érzékenység)
-  real t;      // Loglikelihood függvény komponens
+  real pi1;    // Egyszer ellett tehenekhez tartozÃ³ lÃ¡tszÃ³lagos prevalencia
+  real pi2;    // TÃ¶bbszÃ¶r ellett tehenekhez tartozÃ³ lÃ¡tszÃ³lagos prevalencia
+  real Sp;     // SpecificitÃ¡s (fajlagossÃ¡g)
+  real Se;     // KorfÃ¼ggÃµ szenzitivitÃ¡s (Ã©rzÃ©kenysÃ©g)
+  real t;      // Loglikelihood fÃ¼ggvÃ©ny komponens
 
   real parA;
   real parB;
@@ -84,12 +84,12 @@ model {
   real wgt3;
   real wgt4;
   
-  // Korfüggõ szenzitivitást megadó kérlet paraméterei (Meyer et al. 2018)
+  // KorfÃ¼ggÃµ szenzitivitÃ¡st megadÃ³ kÃ©rlet paramÃ©terei (Meyer et al. 2018)
   parA = 1.2; 
   parB = 3.0;
   parC = 0.30;
 
-  // Specificitás (Meyer et al. 2018)
+  // SpecificitÃ¡s (Meyer et al. 2018)
   Sp   = 0.995;
   
   mu1 ~ beta(65.7,715.9);
@@ -106,18 +106,18 @@ model {
   lmu1=logit(mu1);
   lmu2=logit(mu2);
   
-  //Diszperziós modell 
+  //DiszperziÃ³s modell 
   pszi1 = (sigmasq+sigm1sq)^(-1); 
   pszi2 = (sigmasq+sigm2sq)^(-1);
 
-  //varianciák súlyozása, súlyok négyzet összege 1
+  //varianciÃ¡k sÃºlyozÃ¡sa, sÃºlyok nÃ©gyzet Ã¶sszege 1
   wgt1  = sqrt(sigmasq/(sigmasq+sigm1sq));
   wgt2  = sqrt(sigm1sq/(sigmasq+sigm1sq));
   wgt3  = sqrt(sigmasq/(sigmasq+sigm2sq));
   wgt4  = sqrt(sigm2sq/(sigmasq+sigm2sq));
   
-  theta[1] = mu1*pszi1;      // inverz-béta eloszlás "a" paramétere
-  theta[2] = (1-mu1)*pszi1;  // inverz-béta eloszlás "b" paramétere
+  theta[1] = mu1*pszi1;      // inverz-bÃ©ta eloszlÃ¡s "a" paramÃ©tere
+  theta[2] = (1-mu1)*pszi1;  // inverz-bÃ©ta eloszlÃ¡s "b" paramÃ©tere
   theta[3] = (normal_cdf(wgt1*eta+wgt2*et1, 0, 1)+0.001)*0.999;
   CWHP1 = inv_logit(algebra_solver(inv_beta, [lmu1]', theta, x_r, x_i,
              rel_tol, f_tol, max_steps)[1]); 
@@ -128,28 +128,28 @@ model {
   CWHP2 = inv_logit(algebra_solver(inv_beta, [lmu2]', theta, x_r, x_i,
              rel_tol, f_tol, max_steps)[1]);
 
-    // Loglikelihood függvény komponens
+    // Loglikelihood fÃ¼ggvÃ©ny komponens
     t = 0;
  
     // Egyszer ellett tehenek
     for (k in 1:nAgegr_primi) {
 
-      // A k-adik korcsoporthoz tartozó szenzitivitás
+      // A k-adik korcsoporthoz tartozÃ³ szenzitivitÃ¡s
       Se = inv_logit(parA-parB*exp(-parC*AgeG[k]));
 
-      // Látszólagos prevalencia
+      // LÃ¡tszÃ³lagos prevalencia
       pi1   = Se*CWHP1 + (1-Sp)*(1-CWHP1);
       
       t += binomial_lpmf( POS[k] | nCOW[k], pi1);
     }
 
-    // Többször ellett tehenek
+    // TÃ¶bbszÃ¶r ellett tehenek
     for (k in (nAgegr_primi+1):nAllRec) {
 
-      // A k-adik korcsoporthoz tartozó szenzitivitás
+      // A k-adik korcsoporthoz tartozÃ³ szenzitivitÃ¡s
       Se = inv_logit(parA-parB*exp(-parC*AgeG[k]));
 
-      // Látszólagos prevalencia
+      // LÃ¡tszÃ³lagos prevalencia
       pi2  = Se*CWHP2 + (1-Sp)*(1-CWHP2);
 
       t += binomial_lpmf( POS[k] | nCOW[k], pi2);
@@ -161,7 +161,7 @@ model {
   
 }
 
-generated quantities { //egyedi cWHP számítása
+generated quantities { //egyedi cWHP szÃ¡mÃ­tÃ¡sa
 
   real CWHP1;
   real CWHP2;
