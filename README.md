@@ -12,6 +12,7 @@ Kimenet: Becslés.doc, Becslés.xlsx, Grafikon.pdf
 7. Adjuk meg a munkakönyvtárat. A könyvtárszintek elválasztásával oprációs rendszertől függően \-t vagy /-t kell használnunk
 8. A szükséges helyeken(#fájlnév) írjuk át a fájlneveket
 9. Futtassuk a teljes programot a Knit gomb megnyomásával
+10. Néhány perc várakozást követően megnyílik egy pdf file az eredményekkel, és a munkakönyvtárunkban megjelenik egy .xsls és egy pdf fájl külön a becsléssel és a grafikonnal.
 
    
    
