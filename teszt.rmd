@@ -1,0 +1,260 @@
+---
+title: "Tejelő tehénállományok állományon belüli PTBC fertőzöttségének becslése"
+output: word_document
+date: '2024-01-26'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE,  warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+##########################################################################
+# Bayes-i modellezés a gyakorlatban.
+# Tejelő tehénállományok állományon belüli PTBC fertőzöttségének becslése  
+#
+# Veres Katalin, Lang Zsolt, Monostori Attila, Ózsvári László 
+# 2024                                                       
+##########################################################################
+# FUTTATANDÓ R-KÓD
+#
+# Bemenő adatok:  tehenek életkora, paritás, PTBC teszt eredmény 
+# Kimenő adatok: .... Bayesi becslése
+##########################################################################
+# Használat: 
+# Készítsünk egy csv fájlt a tehenek adataival minta.csv fájl alapján
+# Telepítsük a stan, a ggplot2, a ggridges és a cowplot csomagot
+# Keressünk rá a '# fájlnév!' kifejezésre és szükség esetén írjuk be a fájlok nevét a megfelelő helyekre
+# 
+##########################################################################
+# szükséges csomagok betöltése
+  library(rstan)
+  library(ggplot2)
+  library(ggridges)
+  library(cowplot)
+  library(openxlsx)
+
+# Állítsuk be a munkakönyvtárat. \ jelet használjunk a könyvtár szintek elválasztásához. A program itt keresi atehenek adatait tartalmazó
+# csv fájlt, a modell leírását tartalmaz stan fájlt és ide menti az eredményeket
+  setwd("C:/Users/Veres Katalin/Desktop/Phd/PTBC_2021/Selected/Alapmodell/harmadik")
+
+# Írjunk be a tehenek adatait tartalmazó csv fájl nevét az idézőjelek közé
+# fájlnév!
+  filename = "teszt.csv"
+  PTBCdata = read.table(filename, sep=";", dec=",", 
+                      header=T)
+
+# Korcsoportba sorolás
+# 1.75, 2.00, ..., 2.75 év (increment=0.25) - 5 db, 
+# 3.00, 3.33, ..., 4.33 év (increment=0.33) - 5 db
+# 4.50, 5.00, 5.50, ..., 16 év (increment=0.5) - 24 db.
+  PTBCdata$AGE<-as.numeric(PTBCdata$AGE)
+  
+  PTBCdata[PTBCdata$AGE<=3,"AGEG"] =
+    round(4*PTBCdata[PTBCdata$AGE<=3,"AGE"])/4
+  
+  PTBCdata[PTBCdata$AGE>3 & PTBCdata$AGE<=4.5,"AGEG"] =
+    round(3*PTBCdata[PTBCdata$AGE>3 & PTBCdata$AGE<=4.5,"AGE"])/3
+  
+  PTBCdata[PTBCdata$AGE>4.5,"AGEG"] =
+    round(2*PTBCdata[PTBCdata$AGE>4.5,"AGE"])/2
+  
+  PTBCdata$AGEG = round(PTBCdata$AGEG,3)
+  
+  PTBCdata$one = 1 # segédváltozó
+
+##############################################################
+# Modell bemenet elkészítése: Aggregált adatok
+##############################################################  
+# Egyszer ellett ill. többször ellett tehenek száma, körükben a pozitív tesztek száma
+  
+  PTBCHerdDat = aggregate(
+    data.frame(
+      POS  = PTBCdata$POS,
+      nCOW = PTBCdata$one),
+    list(
+      MULTIPAR = PTBCdata$MULTIPAR,
+      HERD_ID  = PTBCdata$HERD_ID
+      ),
+    sum)
+  PTBCHerdDat$percent<-PTBCHerdDat$POS/PTBCHerdDat$nCOW #Látszólagos prevalencia
+
+#Korcsoportonként az egyszer ellett ill. többször ellett tehenek száma, körükben a pozitív tesztek száma
+  
+  PTBCHerd2 = aggregate(
+    data.frame(
+      POS  = PTBCdata$POS,
+      nCOW = PTBCdata$one),
+    list(
+      AGEG     = PTBCdata$AGEG,
+      MULTIPAR = PTBCdata$MULTIPAR,
+      HERD_ID  = PTBCdata$HERD_ID),
+    sum)
+  
+  PTBCHerd2$one = 1 # segédváltozó
+  
+  #Egyszer ellett ill. többször ellett tehenek korcsoportjainak száma
+  PTBCHerd3 = aggregate(
+    data.frame(
+      nRec = PTBCHerd2$one),
+    list(
+      MULTIPAR = PTBCHerd2$MULTIPAR,
+      HERD_ID  = PTBCHerd2$HERD_ID),
+    sum)
+  
+    # Egyszer ellett tehenek korcsoportjainak száma
+    nAgegr_primi = PTBCHerd3$nRec[1]
+  
+    # A tehenek korcsoportjai, vektor
+    AgeG = PTBCHerd2$AGEG
+
+    # Az összes tehén korcsoportjainak száma
+    nAllRec = nrow(PTBCHerd2)
+##########################################################################
+# Bayesian analysis
+#
+# List of input data
+LData =
+  list(
+    nAllRec = nAllRec,             # Az összes tehén korcsoportjainak száma
+    nAgegr_primi   = nAgegr_primi, # Egyszer ellett tehenek korcsoportjainak száma   
+    nCOW    = PTBCHerd2$nCOW,      # Egyszer ill. többször ellett tehenek száma korcsoportonként 
+    POS     = PTBCHerd2$POS,       # Pozitívat tesztelő egyszer ill. többször ellett tehenek száma korcsoportonként
+    AgeG    = AgeG                 # A tehenek korcsoportjai
+    )   
+
+  #stan inicializálása
+  options(mc.cores = parallel::detectCores())
+  rstan_options(auto_write = TRUE)
+  Sys.setenv(LOCAL_CPPFLAGS = '-march=corei7 -mtune=corei7')
+  
+  # Garbage Collection 
+  gc()
+
+  # A stan modell fordítása
+  # Itt meg kell adni a modellt tartalmazó .stan végű fájl nevét
+  # fájlnév!
+  PTBC_fit = stan('PTBC_egytelep_magyar_20240126.stan', data=LData, chains=4, iter=20000, control = list(adapt_delta = 0.99,stepsize=0.1), seed = 1085417771)#, control = list(adapt_delta = 0.99, stepsize=0.1))
+
+  sPTBC  = summary(PTBC_fit)
+  sTable = sPTBC$summary
+  sTable1 = sTable[c("CWHP1","CWHP2"),
+                  c("mean","2.5%","97.5%")]
+  
+  #eredmények átalakítása
+  sTable1<-cbind(c(PTBCHerdDat$percent[1],PTBCHerdDat$percent[2]), sTable1)
+  sTable1<-as.data.frame(round(sTable1,3))
+  colnames(sTable1)=c('Látszólagos prevalencia', 'Valódi prevalencia becslése',    '95%-os KrI alsó határa','95%-os KrI felső határa' )
+  rownames(sTable1)=c('Egyszer ellett tehenek', 'Többször ellett tehenek')
+
+  # eredmények kiírása excel fájlba
+  # fájlnév!
+  wb <- createWorkbook(creator = Sys.getenv("USERNAME"))
+  addWorksheet(wb, "Becslés")
+  setColWidths(
+    wb,
+    "Becslés",
+    c(1,2,3,4,5),
+    widths = 30
+  )
+  # Create a percent style
+  pct = createStyle(numFmt="0.0%")
+  writeData(wb, "Becslés", sTable1, rowNames = TRUE)
+  addStyle(wb, "Becslés", style=pct, cols=c(2,3,4,5), rows=2:(nrow(sTable1)+1), gridExpand=TRUE)
+  saveWorkbook(wb, file="Becslés.xlsx", overwrite = TRUE)
+  
+```
+Bejövő adatfájl:`r filename`
+
+## Becslés
+
+```{r, include=TRUE,  warning=FALSE}
+
+   
+  for (i in 1:4) {
+    sTable1[,i] <- paste0(sTable1[,i]*100, "%")
+  }
+  
+library(knitr)
+ kable(sTable1,results = 'asis', digits = 1)
+```
+
+```{r, include=FALSE,  warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+  ##########################################################################
+# Ábra
+
+# Adatok kinyerése a poszterior eloszlásból
+  telep  = extract(PTBC_fit)
+  CWHP1     = data.frame(x=telep$CWHP1, type="CWHP1")
+  CWHP2     = data.frame(x=telep$CWHP2, type="CWHP2")
+  CWHP1_mean  = summary(PTBC_fit)$summary[9,1]
+  CWHP2_mean  = summary(PTBC_fit)$summary[10,1]
+  AP1 = PTBCHerdDat$percent[1]
+  AP2 = PTBCHerdDat$percent[2]
+
+# Ábrák készítése
+# Kék függőleges: Látszólagos prevalencia
+# Fekete függőleges: Becsült valós prevalencia
+# Zöld sáv: 95%-os kredibilis intervallum a becsült prevalenciára
+p1<-ggplot(CWHP1, aes(x = x, y = type, fill = factor(stat(quantile)))) +
+  stat_density_ridges(
+    geom = "density_ridges_gradient",
+    calc_ecdf = TRUE,
+    quantiles = c(0.025, 0.975),
+    scale=1
+  ) +
+  scale_fill_manual(
+    name = "Probability", values = c( "#A0A0A0A0", "lightgreen","#A0A0A0A0")
+  )+
+  theme_classic()+
+  labs(x="Poszterior prevalencia(%)", y="Sűrűség")+
+  scale_y_discrete(labels = c('Egyszer ellett','Többször ellett'))+
+  theme(legend.position = "none")+
+  geom_vline(xintercept = CWHP1_mean, col="black")+
+  geom_vline(xintercept = AP1, col="blue")+
+  ggtitle("Egyszer ellett tehenek")+
+  theme(axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+p2<-ggplot(CWHP2, aes(x = x, y = type, fill = factor(stat(quantile)))) +
+  stat_density_ridges(
+    geom = "density_ridges_gradient",
+    calc_ecdf = TRUE,
+    quantiles = c(0.025, 0.975),
+    scale=0.9
+  ) +
+  scale_fill_manual(
+    name = "Probability", values = c( "#A0A0A0A0", "lightgreen","#A0A0A0A0")
+  )+
+  theme_classic()+
+  labs(x="Poszterior prevalencia(%)", y="Sűrűség")+
+  scale_y_discrete(labels = c('Többször ellett'))+
+  theme(legend.position = "none")+
+  geom_vline(xintercept = CWHP2_mean, col="black")+
+  geom_vline(xintercept = AP2, col="blue")+
+  ggtitle("Többször ellett tehenek")+
+  theme(axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+```
+
+
+## Ábra a látszólagos és valós prevalenciáról
+
+
+```{r pressure, echo=FALSE, warning=FALSE, message=FALSE}
+plot_grid(p1, p2)
+
+#Ábra mentése
+# fájlnév!
+ggsave(filename="Grafikon.pdf", unit="in", width=10, height=5, device='pdf', dpi=300)
+
+```
+
