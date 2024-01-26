@@ -5,7 +5,7 @@ Kimenet: Becsles.doc, Becsles.xlsx, Grafikon.pdf
 
 1. Mentsük le a projektfájlokat egy mappába
 2. Telepítsük az RStudio-t, ha szükséges
-3. Készítsük el a tehénadatokat tartalmazó bemeneti csv fájl-t a minta.csv alapján.
+3. Készítsük el a tehénadatokat tartalmazó bemeneti csv fájl-t a minta.csv alapján vagy használjuk a teszt.csv fájlt.
 4. Indítsuk el az RStudio-t
 5. Telepítsük az RStan,  Rmarkdown, kntir, ggplot, cowplot, ggridges csomagokat, ha szükséges
 6. Nyissuk meg a PTBC_egytelep.rmd fájlt.
