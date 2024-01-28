@@ -135,7 +135,7 @@ LData =
   # A stan modell fordítása
   # Itt meg kell adni a modellt tartalmazó .stan végű fájl nevét
   # fájlnév!
-  PTBC_fit = stan('PTBC_egytelep_magyar_20240126.stan', data=LData, chains=4, iter=20000, control = list(adapt_delta = 0.99,stepsize=0.1), seed = 1085417771)#, control = list(adapt_delta = 0.99, stepsize=0.1))
+  PTBC_fit = stan('PTBC_egytelep.stan', data=LData, chains=4, iter=20000, control = list(adapt_delta = 0.99,stepsize=0.1), seed = 1085417771)#, control = list(adapt_delta = 0.99, stepsize=0.1))
 
   sPTBC  = summary(PTBC_fit)
   sTable = sPTBC$summary
