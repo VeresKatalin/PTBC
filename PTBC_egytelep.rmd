@@ -35,9 +35,9 @@ knitr::opts_chunk$set(echo = FALSE)
   library(cowplot)
   library(openxlsx)
 
-# Állítsuk be a munkakönyvtárat. \ jelet használjunk a könyvtár szintek elválasztásához. A program itt keresi atehenek adatait tartalmazó
+# Állítsuk be a munkakönyvtárat. / jelet használjunk a könyvtár szintek elválasztásához. A program itt keresi a tehenek adatait tartalmazó
 # csv fájlt, a modell leírását tartalmaz stan fájlt és ide menti az eredményeket
-  setwd("C:/Users/Veres Katalin/Desktop/Phd/PTBC_2021/Selected/Alapmodell/harmadik")
+  setwd("...")
 
 # Írjunk be a tehenek adatait tartalmazó csv fájl nevét az idézőjelek közé
 # fájlnév!
